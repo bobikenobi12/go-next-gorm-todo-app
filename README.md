@@ -1,3 +1,7 @@
+<video src="screenshots/app.mp4" controls="controls" style="max-width: 100%;">
+  Your browser does not support the video tag.
+</video>
+
 # I. Цел на проекта
 Придобиване на практически умения за работа с контейнери (Docker), регистри за изображения (Docker Hub) и оркестрация на контейнери (Kubernetes) чрез изграждане и деплойване на микросървисна архитектура.
 
