@@ -1,64 +1,81 @@
-<video src="screenshots/app.mp4" controls="controls" style="max-width: 100%;">
-  Your browser does not support the video tag.
-</video>
+# Dani Proekt (Student Exercise)
 
-# I. Цел на проекта
-Придобиване на практически умения за работа с контейнери (Docker), регистри за изображения (Docker Hub) и оркестрация на контейнери (Kubernetes) чрез изграждане и деплойване на микросървисна архитектура.
+## Описание
+Този проект е цялостна демонстрация на съвременен DevOps жизнен цикъл, включващ контейнеризация (Docker), облачна инфраструктура (GCP), Infrastructure as Code (Pulumi) и автоматизирани CI/CD процеси. Приложението представлява микросървисна архитектура с Backend (Go), Frontend (Next.js) и База данни (PostgreSQL).
 
-# II. Техническо задание
-Трябва да разработите и деплойнете приложение по избор, което се състои от **ПОНЕ три отделни компонента (микросървиса)**:
+## Архитектурна Диаграма
+```mermaid
+graph TD
+    subgraph "Local Development"
+        Dev[Developer] --> Git[Local Git Repo]
+        Git -- "Pre-commit Hooks" --> Git
+    end
 
-1.  **Database (База данни):** Съхранява информацията.
-2.  **Backend (API):** Обработва логиката и комуникира с базата.
-3.  **Frontend (UI):** Потребителски интерфейс за визуализация.
+    subgraph "GitHub Actions (CI/CD)"
+        Git -- "Push to Main" --> CI[CI Pipeline]
+        CI -- "Lint & Test" --> CI
+        CI -- "Build & Push" --> DH[Docker Hub]
+        CI -- "Success" --> CD[CD Pipeline]
+    end
 
-# III. Етапи на изпълнение
+    subgraph "Google Cloud Platform (GCP)"
+        subgraph "Infrastructure (IaC - Pulumi)"
+            WIF[Workload Identity Federation]
+        end
 
-## Етап 1: Подготовка и Разработка (Development)
-*   Изберете технологии за разработка (напр. Python/Flask, Node.js/Express за бекенд; React, Vue или чист HTML/JS за фронтенд).
-*   **Database:** Използвайте готова PostgreSQL или MongoDB (няма нужда да пишете код за базата, ще използвате готов имидж, но трябва да я конфигурирате).
-*   **Backend:** Напишете прост API код, който чете и записва данни в базата.
-*   **Frontend:** Напишете прост интерфейс, който прави HTTP заявки към Бекенда.
+        subgraph "Kubernetes (GKE)"
+            Cluster[GKE Cluster]
+            Backend[Backend Pods]
+            Frontend[Frontend Pods]
+            DB[Postgres Pod]
+        end
 
-## Етап 2: Docker и Docker Hub (Containerization)
-1.  **Регистрация:** Създайте си личен профил в Docker Hub.
-2.  **Dockerfile:** Създайте Dockerfile за вашия Backend.
-3.  **Dockerfile:** Създайте Dockerfile за вашия Frontend.
-4.  **Build & Tag:** Билднете имиджите локално и ги тагнете по следния стандарт: `<вашето-потребителско-име>/<име-на-проект>-backend:v1`.
-5.  **Push:** Качете (push-нете) готовите имиджи във вашия Docker Hub профил.
+        CD -- "Authenticate via WIF" --> Cluster
+        CD -- "Apply Manifests" --> Cluster
+    end
 
-> **Забележка:** Базата данни ще се тегли директно от официалните хранилища (`library/postgres` или `library/mongo`), не е нужно да качвате нейн имидж, освен ако не е модифициран.
+    DH -- "Pull Images" --> Cluster
+    User[End User] --> Frontend
+    Frontend --> Backend
+    Backend --> DB
+```
 
-## Етап 3: Локален Kubernetes Клъстер (Orchestration)
-1.  Инсталирайте и стартирайте Minikube (или активирайте Kubernetes в Docker Desktop).
-2.  Уверете се, че клъстерът работи коректно чрез командата `kubectl get nodes`.
+## Инструкции за стартиране
 
-## Етап 4: Деплоймънт в Kubernetes (Deployment)
-Трябва да напишете YAML манифести за всеки микросървис.
+### 1. Локално стартиране с Docker Compose
+```bash
+docker compose up --build
+```
 
-### 1. За Базата данни:
-*   Създайте Deployment (1 реплика).
-*   Създайте Service от тип `ClusterIP` (за вътрешна комуникация).
-*   **(Бонус):** Използвайте ConfigMap или Secret за паролите на базата.
+### 2. Стартиране на Инфраструктурата (GCP)
+За детайлни инструкции как да настроите GCP и Pulumi, моля вижте [SETUP.md](SETUP.md).
+```bash
+cd iac
+pulumi up
+```
 
-### 2. За Бекенда:
-*   Създайте Deployment (минимум 1 реплика).
-*   В конфигурацията на контейнера, имиджът трябва да се тегли от вашия Docker Hub.
-*   Настройте **Environment Variables** (променливи на средата), за да може бекендът да знае IP адреса/името на сървиса на базата данни.
-*   Създайте Service от тип `ClusterIP`.
+### 3. CI/CD Процес
+При всеки `push` към `main` клон:
+1. Автоматично се изпълняват тестове и линтери.
+2. Билдват се Docker имиджи и се качват в Docker Hub.
+3. Промените се деплойват автоматично в Google Kubernetes Engine (GKE).
 
-### 3. За Фронтенда:
-*   Създайте Deployment (минимум 1 реплика).
-*   Имиджът трябва да е от вашия Docker Hub.
-*   Създайте Service от тип `NodePort` или `LoadBalancer`, за да може приложението да се отвори в браузър извън клъстера.
+## Използвани Технологии
+- **Backend**: Go (Golang)
+- **Frontend**: Next.js (TypeScript, Tailwind CSS)
+- **Database**: PostgreSQL
+- **Orchestrator**: Google Kubernetes Engine (GKE)
+- **IaC**: Pulumi (Go SDK)
+- **CI/CD**: GitHub Actions
+- **Cost Transparency**: Infracost
+- **Security**: Workload Identity Federation, Pre-commit Hooks, Gitleaks
 
-# IV. Изисквания за предаване
-Ученикът трябва да предостави архив или линк към GitHub хранилище, съдържащо:
-
-*   **Source Code:** Кодът на Frontend и Backend.
-*   **Dockerfiles:** Файловете за създаване на имиджите.
-*   **K8S Manifests:** Всички `.yaml` файлове (`deployment.yaml`, `service.yaml` и др.).
-*   **Screenshots (Доказателства):**
-    *   Снимка на профила в Docker Hub с качените имиджи.
-    *   Снимка на терминала с работещи Pod-ове (`kubectl get pods`).
-    *   Снимка на работещото приложение в браузъра.
+## Структура на Проекта
+- `backend/`: API сървър, написан на Go.
+- `frontend/`: Потребителски интерфейс (Next.js).
+- `iac/`: Infrastructure as Code файлове (Pulumi).
+- `k8s/`: Kubernetes манифести за деплоймънт.
+- `.github/workflows/`: CI/CD дефиниции.
+- `docs/`: Допълнителна документация и диаграми.
+- `SETUP.md`: Детайлни стъпки за конфигурация.
+- `.pre-commit-config.yaml`: Конфигурация за pre-commit куки.

@@ -1,0 +1,7 @@
+name: iac
+description: GCP Infrastructure with Pulumi and Go
+runtime: go
+config:
+  pulumi:tags:
+    value:
+      pulumi:template: gcp-go

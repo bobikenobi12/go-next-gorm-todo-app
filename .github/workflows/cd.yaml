@@ -1,0 +1,69 @@
+name: CD Pipeline
+
+on:
+  workflow_run:
+    workflows: ["CI Pipeline"]
+    types:
+      - completed
+    branches:
+      - main
+
+jobs:
+  deploy:
+    name: Deploy to GKE
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # Required for Workload Identity Federation
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GOOGLE_WIF_PROVIDER }}
+          service_account: ${{ secrets.GOOGLE_WIF_SA }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Get GKE Credentials
+        uses: google-github-actions/get-gke-credentials@v2
+        with:
+          cluster_name: ${{ secrets.GKE_CLUSTER_NAME }}
+          location: ${{ secrets.GKE_CLUSTER_LOCATION }}
+
+      - name: Update Deployment Images
+        run: |
+          # Use sed to replace the placeholder image with the actual one from Docker Hub
+          # The tags were built in the CI pipeline with the commit SHA
+          sed -i 's|image: .*/backend:.*|image: ${{ secrets.DOCKERHUB_USERNAME }}/backend:${{ github.sha }}|g' k8s/backend.yaml
+          sed -i 's|image: .*/frontend:.*|image: ${{ secrets.DOCKERHUB_USERNAME }}/frontend:${{ github.sha }}|g' k8s/frontend.yaml
+
+      - name: Apply Manifests
+        run: |
+          kubectl apply -f k8s/postgres-db.yaml
+          kubectl apply -f k8s/backend.yaml
+          kubectl apply -f k8s/frontend.yaml
+
+      - name: Verify Rollout
+        run: |
+          kubectl rollout status deployment/backend
+          kubectl rollout status deployment/frontend
+
+      - name: Notify Success
+        if: success() && secrets.DISCORD_WEBHOOK != ''
+        uses: tsickert/discord-webhook@v6.0.0
+        with:
+          webhook-url: ${{ secrets.DISCORD_WEBHOOK }}
+          content: "✅ **Deployment Successful!**\nEnvironment: `Production (GKE)`\nCommit: `${{ github.sha }}`\nApps: `Backend`, `Frontend`, `Postgres`"
+
+      - name: Notify Failure
+        if: failure() && secrets.DISCORD_WEBHOOK != ''
+        uses: tsickert/discord-webhook@v6.0.0
+        with:
+          webhook-url: ${{ secrets.DISCORD_WEBHOOK }}
+          content: "❌ **Deployment Failed!**\nEnvironment: `Production (GKE)`\nCommit: `${{ github.sha }}`\nCheck the Actions tab for logs."

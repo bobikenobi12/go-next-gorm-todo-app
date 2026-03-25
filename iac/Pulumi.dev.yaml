@@ -1,0 +1,5 @@
+encryptionsalt: v1:W4nJ97mFgaI=:v1:ihxHO1PZTmnzaNZr:xq06cG6vQ8qoWl2tJy1+alAsGE3H4A==
+config:
+  gcp:project: tovr-460516
+  gcp:region: europe-west1
+  gcp:zone: europe-west1-b

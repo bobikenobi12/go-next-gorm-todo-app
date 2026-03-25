@@ -1,0 +1,38 @@
+graph TD
+    subgraph "Local Development"
+        Dev[Developer] --> Git[Local Git Repo]
+        Git -- "Pre-commit Hooks" --> Git
+    end
+
+    subgraph "GitHub Actions (CI/CD)"
+        Git -- "Push to Main" --> CI[CI Pipeline]
+        CI -- "Lint & Test" --> CI
+        CI -- "Infracost (PR Only)" --> CI
+        CI -- "Build & Push" --> DH[Docker Hub]
+        CI -- "Success" --> CD[CD Pipeline]
+    end
+
+    subgraph "Google Cloud Platform (GCP)"
+        subgraph "Infrastructure (IaC - Pulumi)"
+            VPC[VPC Network]
+            Subnet[Subnet]
+            AR[Artifact Registry]
+            WIF[Workload Identity Federation]
+        end
+
+        subgraph "Kubernetes (GKE)"
+            Cluster[GKE Cluster]
+            NodePool[Spot Node Pool]
+            Backend[Backend Pods]
+            Frontend[Frontend Pods]
+            DB[Postgres Pod]
+        end
+
+        CD -- "Authenticate via WIF" --> Cluster
+        CD -- "Apply Manifests" --> Cluster
+    end
+
+    DH -- "Pull Images" --> Cluster
+    User[End User] --> Frontend
+    Frontend --> Backend
+    Backend --> DB
