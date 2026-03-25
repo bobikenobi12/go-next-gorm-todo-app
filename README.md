@@ -1,4 +1,4 @@
-# Dani Proekt (Student Exercise)
+# Go + Next + GORM Todo App, built by BORISLAV BORISOV & STOYAN BABANOV
 
 ## Описание
 Този проект е цялостна демонстрация на съвременен DevOps жизнен цикъл, включващ контейнеризация (Docker), облачна инфраструктура (GCP), Infrastructure as Code (Pulumi) и автоматизирани CI/CD процеси. Приложението представлява микросървисна архитектура с Backend (Go), Frontend (Next.js) и База данни (PostgreSQL).
